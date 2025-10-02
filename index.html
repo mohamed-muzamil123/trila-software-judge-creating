@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Judge Panel - Fest Management Software</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --danger-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to bottom, #f0f2f5, #ffffff);
+            min-height: 100vh;
+        }
+        .header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .table-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .judge-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 1rem;
+        }
+        .judge-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+        .table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        .table thead th {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+        .table tbody tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+        .btn {
+            border-radius: 25px;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            transition: border-color 0.3s ease;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .toast-container {
+            z-index: 1055;
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        @media (max-width: 768px) {
+            main {
+                padding: 1rem;
+            }
+            .judge-card {
+                margin-bottom: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="mb-0 fw-bold">Judge Panel</h1>
+        </div>
+    </header>
+
+    <main class="container-fluid p-4">
+        <div class="table-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold text-dark">Judges Management</h2>
+                <button class="btn btn-primary" id="addJudgeBtn">
+                    <i class="bi bi-plus-circle me-2"></i>Add Judge
+                </button>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" id="judgeSearch" placeholder="Search by phone, category, or programme..." onkeyup="filterJudges()">
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>SL No</th>
+                            <th>Programme Name</th>
+                            <th>Programme Category</th>
+                            <th>Judge Phone Number</th>
+                            <th>Password</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="judgesTbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Judge Modal -->
+    <div class="modal fade" id="addJudgeModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Add Judge</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="judgeForm">
+                        <input type="hidden" id="judgeId">
+                        <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <select class="form-select" id="judgeCategory" required>
+                                <option value="">Select Category</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Programme</label>
+                            <select class="form-select" id="judgeProgramme" required disabled>
+                                <option value="">Select Programme</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Judge Phone Number</label>
+                            <input type="tel" class="form-control" id="judgePhone" required>
+                        </div>
+                        <div class="alert alert-info" id="passwordInfo" style="display: none;">
+                            Generated Password: <span id="generatedPassword"></span>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveJudge()">Save</button>
+                    <button type="button" class="btn btn-success" onclick="sendJudgeMessage()" id="sendBtn" style="display: none;">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="liveToast" class="toast align-items-center text-white bg-success border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body" id="toastBody"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC0eal8jWB6ksEpFCEYMRIOhzpAROwlXns",
+            authDomain: "festhub-d7138.firebaseapp.com",
+            projectId: "festhub-d7138",
+            storageBucket: "festhub-d7138.firebasestorage.app",
+            messagingSenderId: "396565568701",
+            appId: "1:396565568701:web:c2c4001be99eef231a6bd4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let judges = [], categories = [], programmes = [];
+        let unsubscribeJudges = null, unsubscribeCategories = null, unsubscribeProgrammes = null;
+
+        // Define functions globally first
+        window.showToast = function(message, type = 'success') {
+            const toastEl = document.getElementById('liveToast');
+            const toastBody = document.getElementById('toastBody');
+            if (toastEl && toastBody) {
+                toastBody.textContent = message;
+                toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+                const toast = new bootstrap.Toast(toastEl);
+                toast.show();
+            }
+        };
+
+        window.generatePassword = function(category, programme) {
+            const catPrefix = category.substring(0, 2).toUpperCase();
+            const progPrefix = programme.substring(0, 2).toUpperCase();
+            const randomNum = Math.floor(Math.random() * 900) + 100; // 3 digits
+            return catPrefix + progPrefix + randomNum;
+        };
+
+        window.openWhatsApp = function(phone, category, programme, password) {
+            const message = `Hello Judge,\nCategory: ${category}\nProgramme: ${programme}\nLink: [judge login link will be added later]\nPassword: ${password}`;
+            const encodedMessage = encodeURIComponent(message);
+            window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
+        };
+
+        window.togglePassword = function(judgeId) {
+            const toggleIcon = document.querySelector(`i[data-judge-id="${judgeId}"]`);
+            if (!toggleIcon) return;
+            const passwordCell = toggleIcon.closest('td');
+            const passwordSpan = passwordCell.querySelector('.password-display');
+            if (!passwordSpan) return;
+            const isShowing = passwordSpan.dataset.showing === 'true';
+            if (isShowing) {
+                passwordSpan.textContent = '•'.repeat(passwordSpan.dataset.password.length);
+                passwordSpan.dataset.showing = 'false';
+                toggleIcon.classList.remove('bi-eye-slash');
+                toggleIcon.classList.add('bi-eye');
+            } else {
+                passwordSpan.textContent = passwordSpan.dataset.password;
+                passwordSpan.dataset.showing = 'true';
+                toggleIcon.classList.remove('bi-eye');
+                toggleIcon.classList.add('bi-eye-slash');
+            }
+        };
+
+        window.loadProgrammesForJudge = function() {
+            const category = document.getElementById('judgeCategory').value;
+            const programmeSelect = document.getElementById('judgeProgramme');
+            if (!programmeSelect) return;
+            programmeSelect.innerHTML = '<option value="">Select Programme</option>';
+            programmeSelect.disabled = !category;
+            if (!category) return;
+            const catProgrammes = programmes.filter(p => p.category === category).sort((a, b) => (a.serial || 0) - (b.serial || 0));
+            catProgrammes.forEach(p => {
+                const option = new Option(p.name, p.name);
+                programmeSelect.add(option);
+            });
+        };
+
+        window.filterJudges = function() {
+            const search = document.getElementById('judgeSearch').value.toLowerCase();
+            const filtered = judges.filter(j => 
+                j.phoneNumber.includes(search) || j.category.toLowerCase().includes(search) || j.programme.toLowerCase().includes(search)
+            );
+            const tbody = document.getElementById('judgesTbody');
+            if (tbody) {
+                tbody.innerHTML = filtered.map((j, index) => `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${j.programme}</td>
+                        <td>${j.category}</td>
+                        <td>${j.phoneNumber}</td>
+                        <td>
+                            <span class="password-display" data-password="${j.password}" data-showing="false">${'•'.repeat(j.password.length)}</span>
+                            <i class="bi bi-eye password-toggle" data-judge-id="${j.id}" onclick="togglePassword('${j.id}')" style="cursor: pointer; color: #6c757d; margin-left: 5px;"></i>
+                        </td>
+                        <td>
+                            <button class="btn btn-success btn-sm me-1" onclick="sendJudgeMessage('${j.id}')">
+                                <i class="bi bi-send"></i> Send
+                            </button>
+                            <button class="btn btn-primary btn-sm me-1" onclick="editJudge('${j.id}')">
+                                <i class="bi bi-pencil"></i> Edit
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteJudge('${j.id}')">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        };
+
+        window.saveJudge = async function() {
+            const form = document.getElementById('judgeForm');
+            if (!form || !form.checkValidity()) {
+                if (form) form.reportValidity();
+                return;
+            }
+            const category = document.getElementById('judgeCategory').value;
+            const programme = document.getElementById('judgeProgramme').value;
+            const phone = document.getElementById('judgePhone').value;
+            const password = generatePassword(category, programme);
+            const data = {
+                category,
+                programme,
+                phoneNumber: phone,
+                password,
+                status: 'saved'
+            };
+            const id = document.getElementById('judgeId').value;
+            const maxSerial = judges.length ? Math.max(...judges.map(j => j.serial || 0)) + 1 : 1;
+            data.serial = id ? judges.find(j => j.id === id).serial : maxSerial;
+            try {
+                if (id) {
+                    await updateDoc(doc(db, 'judges', id), data);
+                } else {
+                    await addDoc(collection(db, 'judges'), data);
+                }
+                document.getElementById('passwordInfo').style.display = 'block';
+                document.getElementById('generatedPassword').textContent = password;
+                document.getElementById('sendBtn').style.display = 'inline-block';
+                showToast('Judge saved successfully');
+                form.reset();
+                document.getElementById('judgeProgramme').disabled = true;
+            } catch (error) {
+                showToast('Error saving judge: ' + error.message, 'danger');
+            }
+        };
+
+        window.editJudge = function(id) {
+            const judge = judges.find(j => j.id === id);
+            if (!judge) return;
+            document.getElementById('judgeId').value = id;
+            document.getElementById('judgeCategory').value = judge.category;
+            loadProgrammesForJudge();
+            setTimeout(() => {
+                document.getElementById('judgeProgramme').value = judge.programme;
+            }, 100);
+            document.getElementById('judgePhone').value = judge.phoneNumber;
+            document.getElementById('passwordInfo').style.display = 'none';
+            document.getElementById('sendBtn').style.display = 'none';
+            const modal = new bootstrap.Modal(document.getElementById('addJudgeModal'));
+            modal.show();
+        };
+
+        window.deleteJudge = async function(id) {
+            if (!confirm('Are you sure you want to delete this judge?')) return;
+            try {
+                await deleteDoc(doc(db, 'judges', id));
+                showToast('Judge deleted successfully');
+            } catch (error) {
+                showToast('Error deleting judge: ' + error.message, 'danger');
+            }
+        };
+
+        window.sendJudgeMessage = function(id) {
+            const judge = judges.find(j => j.id === id);
+            if (!judge) return;
+            openWhatsApp(judge.phoneNumber, judge.category, judge.programme, judge.password);
+        };
+
+        // Load Data
+        function loadAllData() {
+            loadCategories();
+            loadProgrammes();
+            loadJudges();
+        }
+
+        function loadCategories() {
+            if (unsubscribeCategories) unsubscribeCategories();
+            unsubscribeCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
+                categories = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.serial || 0) - (b.serial || 0));
+                populateCategorySelect('judgeCategory');
+            }, (error) => {
+                console.error('Error loading categories:', error);
+            });
+        }
+
+        function loadProgrammes() {
+            if (unsubscribeProgrammes) unsubscribeProgrammes();
+            unsubscribeProgrammes = onSnapshot(collection(db, 'programmes'), (snapshot) => {
+                programmes = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.serial || 0) - (b.serial || 0));
+            }, (error) => {
+                console.error('Error loading programmes:', error);
+            });
+        }
+
+        function loadJudges() {
+            if (unsubscribeJudges) unsubscribeJudges();
+            unsubscribeJudges = onSnapshot(collection(db, 'judges'), (snapshot) => {
+                judges = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.serial || 0) - (b.serial || 0));
+                renderJudgesTable();
+                const searchInput = document.getElementById('judgeSearch');
+                if (searchInput && searchInput.value) {
+                    filterJudges();
+                }
+            }, (error) => {
+                console.error('Error loading judges:', error);
+            });
+        }
+
+        function populateCategorySelect(selectId) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            select.innerHTML = '<option value="">Select Category</option>';
+            categories.forEach(cat => {
+                const option = new Option(cat.name, cat.name);
+                select.add(option);
+            });
+        }
+
+        function renderJudgesTable() {
+            const tbody = document.getElementById('judgesTbody');
+            if (!tbody) return;
+            tbody.innerHTML = judges.map((judge, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${judge.programme}</td>
+                    <td>${judge.category}</td>
+                    <td>${judge.phoneNumber}</td>
+                    <td>
+                        <span class="password-display" data-password="${judge.password}" data-showing="false">${'•'.repeat(judge.password.length)}</span>
+                        <i class="bi bi-eye password-toggle" data-judge-id="${judge.id}" onclick="togglePassword('${judge.id}')" style="cursor: pointer; color: #6c757d; margin-left: 5px;"></i>
+                    </td>
+                    <td>
+                        <button class="btn btn-success btn-sm me-1" onclick="sendJudgeMessage('${judge.id}')">
+                            <i class="bi bi-send"></i> Send
+                        </button>
+                        <button class="btn btn-primary btn-sm me-1" onclick="editJudge('${judge.id}')">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteJudge('${judge.id}')">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAllData();
+            // Manual modal handling to ensure Bootstrap is ready
+            const addJudgeBtn = document.getElementById('addJudgeBtn');
+            const addJudgeModal = new bootstrap.Modal(document.getElementById('addJudgeModal'));
+            addJudgeBtn.addEventListener('click', () => {
+                document.getElementById('judgeForm').reset();
+                document.getElementById('judgeId').value = '';
+                document.getElementById('judgeProgramme').disabled = true;
+                document.getElementById('judgeProgramme').innerHTML = '<option value="">Select Programme</option>';
+                document.getElementById('passwordInfo').style.display = 'none';
+                document.getElementById('sendBtn').style.display = 'none';
+                populateCategorySelect('judgeCategory');
+                addJudgeModal.show();
+            });
+
+            // Modal hidden event
+            document.getElementById('addJudgeModal').addEventListener('hidden.bs.modal', () => {
+                document.getElementById('judgeForm').reset();
+                document.getElementById('judgeId').value = '';
+                document.getElementById('judgeProgramme').disabled = true;
+                document.getElementById('judgeProgramme').innerHTML = '<option value="">Select Programme</option>';
+                document.getElementById('passwordInfo').style.display = 'none';
+                document.getElementById('sendBtn').style.display = 'none';
+                populateCategorySelect('judgeCategory');
+            });
+
+            // Add onchange listener for category select
+            document.getElementById('judgeCategory').addEventListener('change', loadProgrammesForJudge);
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>
