@@ -229,7 +229,7 @@
         };
 
         window.openWhatsApp = function(phone, category, programme, password) {
-            const message = `Hello Judge,\nCategory: ${category}\nProgramme: ${programme}\nLink: [judge login link will be added later]\nPassword: ${password}`;
+            const message = `Hello Judge,\nCategory: ${category}\nProgramme: ${programme}\nLink: [https://trila-software-mark-entering.vercel.app/]\nPassword: ${password}`;
             const encodedMessage = encodeURIComponent(message);
             window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
         };
